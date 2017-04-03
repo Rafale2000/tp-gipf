@@ -66,6 +66,17 @@ public class TournoiTest {
 	}
 
 	@Test
+	public void testSave() throws SQLException {
+		tournoi.save(con);
+		Tournoi t = Tournoi.load(tournoi.getIdTournoi(), con).get();
+		assertEquals(tournoi.getArbitres(), t.getArbitres());
+		assertEquals(tournoi.getIdTournoi(), t.getIdTournoi());
+		assertEquals(tournoi.getDebut(), t.getDebut());
+		assertEquals(tournoi.getFin(), t.getFin());
+		assertEquals(tournoi.getLieu(), t.getLieu());
+	}
+
+	@Test
 	public void testSetFin() throws SQLException {
 		tournoi.setFin(LocalDate.of(2017, 3, 11));
 		tournoi.save(con);
