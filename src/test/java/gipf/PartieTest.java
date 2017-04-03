@@ -111,22 +111,38 @@ public class PartieTest {
 		Joueur blanc = p.getBlanc();
 		Joueur noir = p.getNoir();
 
+		// Contrôles initialisation
 		assertThat(p.getIdPartie(), greaterThan(0));
 		assertThat(p.getGagnant(), isEmpty());
 		assertThat(p.getPerdant(), isEmpty());
 		assertThat(p.getPiecesRestantes(), isEmpty());
 
 		assertEquals(1000, blanc.getElo(), 0);
+		assertEquals(1000, noir.getElo(), 0);
 
 		p.setGagnant(true, 5, con);
 
+		// Contrôle mise à jour en RAM
 		assertThat(p.getGagnant(), hasValue(blanc));
 		assertThat(p.getPerdant(), hasValue(noir));
 		assertThat(p.getPiecesRestantes(), hasValue(5));
 
 		assertEquals(1016, blanc.getElo(), .5);
 		assertEquals(984, noir.getElo(), .5);
+		
+		// Contrôle mise à jour en BDD
+		Partie loaded = Partie.load(p.getIdPartie(), con).get();
+		assertThat(loaded.getGagnant(), hasValue(blanc));
+		assertThat(loaded.getPerdant(), hasValue(noir));
+		assertThat(loaded.getPiecesRestantes(), hasValue(5));
 
+		Joueur lBlanc = Joueur.load(blanc.getLogin(), con).get();
+		assertEquals(1016, lBlanc.getElo(), .5);
+		Joueur lNoir = Joueur.load(noir.getLogin(), con).get();
+		assertEquals(984, lNoir.getElo(), .5);
+		
+
+		// Tests algorithme ELO sur une série de parties
 		randGagnants(parties, new Random(0), con);
 
 		Map<String, Integer> testValues = new HashMap<>();
