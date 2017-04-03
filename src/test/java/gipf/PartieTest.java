@@ -20,19 +20,30 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class PartieTest {
-	private Connection con;
+	private static Connection con;
+
+	@BeforeClass
+	public static void connect() throws SQLException {
+		con = Main.connect();
+	}
+
+	@AfterClass
+	public static void close() throws SQLException {
+		con.close();
+	}
+
 	private List<Joueur> joueurs;
 
 	private List<Partie> parties;
 
 	@Before
 	public void setUp() throws SQLException {
-		con = Main.connect();
 		Main.clean(con);
 		joueurs = JoueurTest.inscrire(con);
 
@@ -53,22 +64,14 @@ public class PartieTest {
 	}
 
 	public static void randGagnants(List<Partie> parties, Random rand, Connection con) throws SQLException {
-		// Sélection des victoires aléatoire pour les 30 premières parties
-		for (Partie p : parties.subList(0, 30)) {
-			if (!p.getPiecesRestantes().isPresent()) {
-				p.setGagnant(rand.nextBoolean(), rand.nextInt(5), con);
-			}
+		for (Partie p : parties) {
+			p.setGagnant(rand.nextBoolean(), rand.nextInt(5), con);
 		}
-	}
-
-	@After
-	public void close() throws SQLException {
-		con.close();
 	}
 
 	@Test
 	public void testLoad() throws SQLException {
-		randGagnants(parties, new Random(0), con);
+		randGagnants(parties.subList(1, 30), new Random(0), con);
 		for (Partie tp : parties) {
 			Partie p = Partie.load(tp.getIdPartie(), con).get();
 
@@ -93,7 +96,7 @@ public class PartieTest {
 		Partie p = parties.get(0);
 		p.setDate(LocalDateTime.of(2001, 7, 3, 11, 32));
 		p.save(con);
-		
+
 		Partie l = Partie.load(p.getIdPartie(), con).get();
 		assertEquals(p.getDate(), l.getDate());
 	}
@@ -129,7 +132,7 @@ public class PartieTest {
 
 		assertEquals(1016, blanc.getElo(), .5);
 		assertEquals(984, noir.getElo(), .5);
-		
+
 		// Contrôle mise à jour en BDD
 		Partie loaded = Partie.load(p.getIdPartie(), con).get();
 		assertThat(loaded.getGagnant(), hasValue(blanc));
@@ -140,10 +143,9 @@ public class PartieTest {
 		assertEquals(1016, lBlanc.getElo(), .5);
 		Joueur lNoir = Joueur.load(noir.getLogin(), con).get();
 		assertEquals(984, lNoir.getElo(), .5);
-		
 
 		// Tests algorithme ELO sur une série de parties
-		randGagnants(parties, new Random(0), con);
+		randGagnants(parties.subList(2, 30), new Random(0), con);
 
 		Map<String, Integer> testValues = new HashMap<>();
 		testValues.put("baroqueen", 969);
@@ -193,7 +195,7 @@ public class PartieTest {
 
 	@Test
 	public void testPartiesGagnees() throws SQLException {
-		randGagnants(parties, new Random(0), con);
+		randGagnants(parties.subList(1, 30), new Random(0), con);
 		Map<String, Integer> testValues = new HashMap<>();
 		testValues.put("baroqueen", 4);
 		testValues.put("cobrag", 2);

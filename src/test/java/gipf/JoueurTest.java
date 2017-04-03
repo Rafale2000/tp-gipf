@@ -1,10 +1,13 @@
 package gipf;
 
-import static org.junit.Assert.assertThat;
+import static com.github.npathai.hamcrestopt.OptionalMatchers.isEmpty;
+import static com.github.npathai.hamcrestopt.OptionalMatchers.isPresent;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -15,30 +18,34 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static com.github.npathai.hamcrestopt.OptionalMatchers.*;
 
 public class JoueurTest {
 
 	public static List<String> usernames = Arrays.asList("baroqueen", "cobrag", "vikingkong", "preaster",
 			"fickleSkeleton", "SnowTea", "AfternoonTerror", "JokeCherry", "JealousPelican", "PositiveLamb");
 
-	private Connection con;
+	private static Connection con;
+
+	@BeforeClass
+	public static void connect() throws SQLException {
+		con = Main.connect();
+	}
+
+	@AfterClass
+	public static void close() throws SQLException {
+		con.close();
+	}
+
 	private List<Joueur> joueurs;
 
 	@Before
 	public void setUp() throws SQLException {
-		con = Main.connect();
 		Main.clean(con);
 		joueurs = inscrire(con);
-	}
-
-	@After
-	public void close() throws SQLException {
-		con.close();
 	}
 
 	public static List<Joueur> inscrire(Connection con) {

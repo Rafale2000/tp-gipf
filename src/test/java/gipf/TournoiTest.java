@@ -17,19 +17,31 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TournoiTest {
-	private Connection con;
+	private static Connection con;
+
+	@BeforeClass
+	public static void connect() throws SQLException {
+		con = Main.connect();
+	}
+
+	@AfterClass
+	public static void close() throws SQLException {
+		con.close();
+	}
+
 	private List<Joueur> arbitres;
 	private List<Partie> parties;
 	private Tournoi tournoi;
 
 	@Before
 	public void setUp() throws SQLException {
-		con = Main.connect();
+		// con = Main.connect();
 		Main.clean(con);
 		List<Joueur> joueurs = JoueurTest.inscrire(con);
 
@@ -39,11 +51,6 @@ public class TournoiTest {
 
 		tournoi = Tournoi.create(LocalDate.of(2017, 3, 10), "Maubeuge", arbitres, con);
 		assertThat(tournoi.getIdTournoi(), greaterThan(0));
-	}
-
-	@After
-	public void close() throws SQLException {
-		con.close();
 	}
 
 	@Test
