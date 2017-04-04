@@ -1,5 +1,7 @@
 package gipf;
 
+import static gipf.Main.escape;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -73,6 +75,9 @@ public class Joueur {
 	 * @param s
 	 */
 	public void setEmail(String s) {
+		if (s.contains("'")) {
+			throw new IllegalArgumentException(email + " n'est pas un email valide");
+		}
 		email = s;
 	}
 
@@ -89,8 +94,8 @@ public class Joueur {
 	 */
 	public void save(Connection con) throws SQLException {
 		try (Statement stmt = con.createStatement()) {
-			stmt.executeUpdate("UPDATE Joueur SET elo = " + elo + ", password = '" + password + "', email = '" + email
-					+ "' WHERE login = '" + login + "';");
+			stmt.executeUpdate("UPDATE Joueur SET elo = " + elo + ", password = " + escape(password) + ", email = '"
+					+ email + "' WHERE login = " + escape(login));
 		}
 	}
 
@@ -111,9 +116,12 @@ public class Joueur {
 	 */
 	public static Joueur inscrire(String login, String password, String email, Connection con)
 			throws SQLException, InscriptionException {
+		if (email.contains("'")) {
+			throw new InscriptionException(email + " n'est pas un email valide");
+		}
 		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery("INSERT INTO Joueur VALUES ('" + login + "', DEFAULT, '" + password
-					+ "', '" + email + "') RETURNING *");
+			ResultSet rs = stmt.executeQuery("INSERT INTO Joueur VALUES (" + escape(login) + ", DEFAULT, "
+					+ escape(password) + ", '" + email + "') RETURNING *");
 			if (!rs.next()) {
 				throw new IllegalStateException("Aucune donnée insérée à l'inscription de " + login);
 			}
@@ -142,7 +150,7 @@ public class Joueur {
 	 */
 	public static Optional<Joueur> load(String login, Connection con) throws SQLException {
 		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur WHERE login = '" + login + "'");
+			ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur WHERE login = " + escape(login));
 			if (!rs.next()) {
 				return Optional.empty();
 			} else {

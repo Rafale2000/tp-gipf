@@ -1,5 +1,7 @@
 package gipf;
 
+import static gipf.Main.escape;
+
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
@@ -104,14 +106,14 @@ public class Tournoi {
 			throws SQLException {
 		try (Statement stmt = con.createStatement()) {
 			ResultSet rs = stmt.executeQuery(
-					"INSERT INTO Tournoi VALUES (DEFAULT, '" + debut + "', NULL, '" + lieu + "') RETURNING *");
+					"INSERT INTO Tournoi VALUES (DEFAULT, '" + debut + "', NULL, " + escape(lieu) + ") RETURNING *");
 			if (!rs.next()) {
 				throw new IllegalStateException(
 						"Aucune donnée insérée à la création du tournoi de " + lieu + " du " + debut);
 			}
 			int id = rs.getInt("idTournoi");
 			for (Joueur j : arbitres) {
-				stmt.executeUpdate("INSERT INTO Arbitre VALUES ('" + j.getLogin() + "', " + id + ")");
+				stmt.executeUpdate("INSERT INTO Arbitre VALUES (" + escape(j.getLogin()) + ", " + id + ")");
 			}
 			Tournoi t = new Tournoi(id, debut, Optional.empty(), lieu, arbitres);
 			return t;
@@ -191,7 +193,7 @@ public class Tournoi {
 			stmt.executeUpdate("UPDATE Tournoi SET dateFin = " + f + " WHERE idTournoi = " + idTournoi);
 			stmt.executeUpdate("DELETE FROM Arbitre WHERE idTournoi = " + idTournoi);
 			for (Joueur j : arbitres) {
-				stmt.executeUpdate("INSERT INTO Arbitre VALUES ('" + j.getLogin() + "', " + idTournoi + ")");
+				stmt.executeUpdate("INSERT INTO Arbitre VALUES (" + escape(j.getLogin()) + ", " + idTournoi + ")");
 			}
 		}
 	}
