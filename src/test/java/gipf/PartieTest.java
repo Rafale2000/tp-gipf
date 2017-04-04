@@ -27,6 +27,8 @@ import org.junit.Test;
 
 public class PartieTest {
 	private static Connection con;
+	private List<Joueur> joueurs;
+	private List<Partie> parties;
 
 	@BeforeClass
 	public static void connect() throws SQLException {
@@ -37,10 +39,6 @@ public class PartieTest {
 	public static void close() throws SQLException {
 		con.close();
 	}
-
-	private List<Joueur> joueurs;
-
-	private List<Partie> parties;
 
 	@Before
 	public void setUp() throws SQLException {

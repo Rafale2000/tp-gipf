@@ -25,10 +25,12 @@ import org.junit.Test;
 
 public class JoueurTest {
 
-	public static List<String> usernames = Arrays.asList("baroqueen", "cobrag", "vikingkong", "preaster",
+	private static final List<String> usernames = Arrays.asList("baroqueen", "cobrag", "vikingkong", "preaster",
 			"fickleSkeleton", "SnowTea", "AfternoonTerror", "JokeCherry", "JealousPelican", "PositiveLamb");
 
 	private static Connection con;
+
+	private List<Joueur> joueurs;
 
 	@BeforeClass
 	public static void connect() throws SQLException {
@@ -39,8 +41,6 @@ public class JoueurTest {
 	public static void close() throws SQLException {
 		con.close();
 	}
-
-	private List<Joueur> joueurs;
 
 	@Before
 	public void setUp() throws SQLException {
@@ -112,6 +112,8 @@ public class JoueurTest {
 		Joueur j = joueurs.get(0);
 		j.setPassword("to'to123");
 		j.save(con);
+		Joueur loaded = Joueur.load(j.getLogin(), con).get();
+		assertTrue(loaded.checkPassword("to'to123"));
 	}
 
 	@Test

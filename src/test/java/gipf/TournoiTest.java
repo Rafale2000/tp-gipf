@@ -5,7 +5,10 @@ import static com.github.npathai.hamcrestopt.OptionalMatchers.isEmpty;
 import static com.github.npathai.hamcrestopt.OptionalMatchers.isPresent;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -26,6 +29,10 @@ import org.junit.Test;
 public class TournoiTest {
 	private static Connection con;
 
+	private List<Joueur> arbitres;
+	private List<Partie> parties;
+	private Tournoi tournoi;
+
 	@BeforeClass
 	public static void connect() throws SQLException {
 		con = Main.connect();
@@ -35,10 +42,6 @@ public class TournoiTest {
 	public static void close() throws SQLException {
 		con.close();
 	}
-
-	private List<Joueur> arbitres;
-	private List<Partie> parties;
-	private Tournoi tournoi;
 
 	@Before
 	public void setUp() throws SQLException {
@@ -57,9 +60,11 @@ public class TournoiTest {
 	@Test
 	public void testQuote() throws SQLException, InscriptionException {
 		Joueur j = Joueur.inscrire("to'to", "toto", "toto@univ.fr", con);
-		Tournoi.create(LocalDate.now(), "Villeneuve d'Ascq", Arrays.asList(j), con);
+		Tournoi t = Tournoi.create(LocalDate.now(), "Villeneuve d'Ascq", Arrays.asList(j), con);
+		assertThat(Tournoi.load(t.getIdTournoi(), con), hasValue(hasProperty("lieu", equalTo("Villeneuve d'Ascq"))));
 		tournoi.addArbitre(j);
 		tournoi.save(con);
+		assertThat(Tournoi.load(tournoi.getIdTournoi(), con), hasValue(hasProperty("arbitres", hasItem(j))));
 	}
 
 	@Test
