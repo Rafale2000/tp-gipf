@@ -12,6 +12,7 @@ import static org.junit.Assert.assertThat;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,14 @@ public class TournoiTest {
 
 		tournoi = Tournoi.create(LocalDate.of(2017, 3, 10), "Maubeuge", arbitres, con);
 		assertThat(tournoi.getIdTournoi(), greaterThan(0));
+	}
+
+	@Test
+	public void testQuote() throws SQLException, InscriptionException {
+		Joueur j = Joueur.inscrire("to'to", "toto", "toto@univ.fr", con);
+		Tournoi.create(LocalDate.now(), "Villeneuve d'Ascq", Arrays.asList(j), con);
+		tournoi.addArbitre(j);
+		tournoi.save(con);
 	}
 
 	@Test

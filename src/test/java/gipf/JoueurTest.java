@@ -90,6 +90,54 @@ public class JoueurTest {
 	}
 
 	@Test
+	public void testInscrireQuote() throws SQLException, InscriptionException {
+		Joueur.inscrire("to'to", "to'to123", "to%27to@univ-valenciennes.fr", con);
+		Joueur j = Joueur.load("to'to", con).get();
+		assertEquals("to'to", j.getLogin());
+		assertEquals("to%27to@univ-valenciennes.fr", j.getEmail());
+		assertTrue(j.checkPassword("to'to123"));
+	}
+
+	@Test(expected = Exception.class)
+	public void testBadSave() throws SQLException {
+		Joueur j = joueurs.get(0);
+		j.setEmail(joueurs.get(1).getEmail());
+		j.save(con);
+		j.setEmail("toto");
+		j.save(con);
+	}
+
+	@Test
+	public void testSaveQuote() throws SQLException {
+		Joueur j = joueurs.get(0);
+		j.setPassword("to'to123");
+		j.save(con);
+	}
+
+	@Test
+	public void testInjection() throws SQLException {
+		Joueur j = joueurs.get(0);
+
+		Joueur attaque = joueurs.get(1);
+
+		// L'attaque consiste à changer l'email d'un autre utilisateur (ici
+		// "cobrag" au lieu du joueur j)
+		// pour ensuite demander par exemple une récupération de mot de passe...
+
+		try {
+			j.setEmail("hackerz@hotmail.com' WHERE login = '" + attaque.getLogin() + "' --");
+			j.save(con);
+		} catch (Exception e) {
+			// Il peut y avoir exception ici si l'attaque est détectée
+		}
+
+		// Quoi qu'il en soit l'email de cobrag ne doit pas avoir été modifié
+		Joueur j2 = Joueur.load(attaque.getLogin(), con).get();
+		assertEquals(attaque.getEmail(), j2.getEmail());
+
+	}
+
+	@Test
 	public void testLoad() throws SQLException {
 		for (String u : usernames) {
 			Optional<Joueur> gj = Joueur.load(u, con);
