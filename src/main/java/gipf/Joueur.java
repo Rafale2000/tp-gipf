@@ -91,7 +91,7 @@ public class Joueur {
 	public void save(Connection con) throws SQLException {
 
 		try (PreparedStatement stmt = con
-				.prepareStatement("UPDATE Joueur SET elo = ?, password = ?, email = ? WHERE login = ?;")) {
+				.prepareStatement("UPDATE Joueur SET elo = ?, password = ?, email = ? WHERE login = ?")) {
 			stmt.setDouble(1, elo);
 			stmt.setString(2, password);
 			stmt.setString(3, email);
@@ -160,6 +160,26 @@ public class Joueur {
 				String email = rs.getString("email");
 				String pwd = rs.getString("password");
 				return Optional.of(new Joueur(login, email, pwd, elo));
+			}
+		}
+	}
+
+	/**
+	 * Recharge un joueur depuis la base
+	 * 
+	 * @param con
+	 * @throws SQLException
+	 */
+	public void refresh(Connection con) throws SQLException {
+		try (PreparedStatement stmt = con.prepareStatement("SELECT * FROM Joueur WHERE login = ?")) {
+			stmt.setString(1, login);
+			ResultSet rs = stmt.executeQuery();
+			if (!rs.next()) {
+				throw new IllegalStateException();
+			} else {
+				elo = rs.getDouble("elo");
+				email = rs.getString("email");
+				password = rs.getString("password");
 			}
 		}
 	}

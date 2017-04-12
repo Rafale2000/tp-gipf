@@ -332,11 +332,8 @@ public class Partie {
 			stmt.executeUpdate();
 		}
 
-		final double score = 32 * (1 - 1 / (1 + Math.pow(10, (p.getElo() - g.getElo()) / 400)));
-		g.addElo(score);
-		p.addElo(-score);
-		g.save(con);
-		p.save(con);
+		g.refresh(con);
+		p.refresh(con);
 	}
 
 	@Override

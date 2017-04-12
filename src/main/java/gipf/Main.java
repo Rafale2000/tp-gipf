@@ -21,6 +21,7 @@ public class Main {
 		DS.setDatabaseName("gipf");
 		DS.setUser("vion");
 		DS.setPassword("vion");
+		DS.setPortNumber(5433);
 	}
 
 	/**
