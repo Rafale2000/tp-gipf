@@ -33,17 +33,16 @@ CREATE TABLE Arbitre (
   idTournoi int references Tournoi,
   primary key (login, idTournoi));
   
-CREATE FUNCTION update_elo() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION update_elo() RETURNS TRIGGER AS $$
 DECLARE 
 	score REAL;
 	eloGagnant REAL;
 	eloPerdant REAL;
-	
 BEGIN
 	IF (NEW.gagnant IS NOT NULL AND NEW.perdant IS NOT NULL AND (OLD.gagnant IS NULL OR OLD.perdant IS NULL)) THEN
 		SELECT INTO eloGagnant elo FROM Joueur WHERE login = NEW.gagnant;
 		SELECT INTO eloPerdant elo FROM Joueur WHERE login = NEW.perdant;
-		score := 32 * (1 - 1 / (1 + pow(10; (eloPerdant - eloGagnant) / 400)));
+		score := 32 * (1 - 1 / (1 + pow(10, (eloPerdant - eloGagnant) / 400)));
 		UPDATE Joueur SET elo = elo + score WHERE login = NEW.gagnant;
 		UPDATE joueur SET elo = elo - score WHERE login = NEW.perdant;
 	END IF;
