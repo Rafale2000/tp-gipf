@@ -119,9 +119,9 @@ public class Joueur {
 		if (email.contains("'")) {
 			throw new InscriptionException(email + " n'est pas un email valide");
 		}
-		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery("INSERT INTO Joueur VALUES (" + escape(login) + ", DEFAULT, "
-					+ escape(password) + ", '" + email + "') RETURNING *");
+		try (Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery("INSERT INTO Joueur VALUES (" + escape(login) + ", DEFAULT, "
+						+ escape(password) + ", '" + email + "') RETURNING *")) {
 			if (!rs.next()) {
 				throw new IllegalStateException("Aucune donnée insérée à l'inscription de " + login);
 			}
@@ -149,8 +149,8 @@ public class Joueur {
 	 * @throws SQLException
 	 */
 	public static Optional<Joueur> load(String login, Connection con) throws SQLException {
-		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur WHERE login = " + escape(login));
+		try (Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur WHERE login = " + escape(login))) {
 			if (!rs.next()) {
 				return Optional.empty();
 			} else {
@@ -168,8 +168,8 @@ public class Joueur {
 	 * @throws SQLException
 	 */
 	public static List<Joueur> loadByElo(Connection con) throws SQLException {
-		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur ORDER BY elo DESC");
+		try (Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery("SELECT * FROM Joueur ORDER BY elo DESC")) {
 			ArrayList<Joueur> data = new ArrayList<>();
 			while (rs.next()) {
 				double elo = rs.getDouble("elo");

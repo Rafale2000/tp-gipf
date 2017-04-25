@@ -50,8 +50,12 @@ public class Main {
 		return DS.getConnection();
 	}
 
-	public static String escape(String str) {
-		return "'" + str.replace("'", "''") + "'";
+	public static String escape(Object o) {
+		if (o == null) {
+			return "NULL";
+		} else {
+			return "'" + o.toString().replace("'", "''") + "'";
+		}
 	}
 
 }

@@ -9,6 +9,7 @@
 
 // Apply the java plugin to add support for Java
 apply plugin: 'java'
+apply plugin: 'findbugs'
 sourceCompatibility = 1.8
 
 // In this section you declare where to find the dependencies of your project
@@ -24,4 +25,17 @@ dependencies {
 	testCompile 'junit:junit:4.12'
     testCompile 'org.hamcrest:hamcrest-library:1.3'
 	testCompile 'com.github.npathai:hamcrest-optional:1.0'
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled false
+        html.enabled true
+    }
+}
+
+findbugs {
+    ignoreFailures = true
+    effort = "max"
+    reportLevel = "high"
 }

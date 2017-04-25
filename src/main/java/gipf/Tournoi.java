@@ -22,13 +22,12 @@ import java.util.Set;
 public class Tournoi {
 	private final int idTournoi;
 	private final LocalDate debut;
-	private Optional<LocalDate> fin;
-
+	private LocalDate fin;
 	private final String lieu;
 
 	private Set<Joueur> arbitres;
 
-	private Tournoi(int idTournoi, LocalDate debut, Optional<LocalDate> fin, String lieu, List<Joueur> arbitres) {
+	private Tournoi(int idTournoi, LocalDate debut, LocalDate fin, String lieu, List<Joueur> arbitres) {
 		super();
 		this.idTournoi = idTournoi;
 		this.debut = debut;
@@ -41,14 +40,14 @@ public class Tournoi {
 	 * @return la date de fin du tournoi si elle est connue
 	 */
 	public Optional<LocalDate> getFin() {
-		return fin;
+		return Optional.ofNullable(fin);
 	}
 
 	/**
 	 * Modifie la date de fin
 	 */
 	public void setFin(LocalDate fin) {
-		this.fin = Optional.of(fin);
+		this.fin = fin;
 	}
 
 	/**
@@ -105,18 +104,19 @@ public class Tournoi {
 	public static Tournoi create(LocalDate debut, String lieu, List<Joueur> arbitres, Connection con)
 			throws SQLException {
 		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery(
-					"INSERT INTO Tournoi VALUES (DEFAULT, '" + debut + "', NULL, " + escape(lieu) + ") RETURNING *");
-			if (!rs.next()) {
-				throw new IllegalStateException(
-						"Aucune donnée insérée à la création du tournoi de " + lieu + " du " + debut);
+			final int id;
+			try (ResultSet rs = stmt.executeQuery(
+					"INSERT INTO Tournoi VALUES (DEFAULT, '" + debut + "', NULL, " + escape(lieu) + ") RETURNING *")) {
+				if (!rs.next()) {
+					throw new IllegalStateException(
+							"Aucune donnée insérée à la création du tournoi de " + lieu + " du " + debut);
+				}
+				id = rs.getInt("idTournoi");
 			}
-			int id = rs.getInt("idTournoi");
 			for (Joueur j : arbitres) {
 				stmt.executeUpdate("INSERT INTO Arbitre VALUES (" + escape(j.getLogin()) + ", " + id + ")");
 			}
-			Tournoi t = new Tournoi(id, debut, Optional.empty(), lieu, arbitres);
-			return t;
+			return new Tournoi(id, debut, null, lieu, arbitres);
 		}
 	}
 
@@ -129,15 +129,15 @@ public class Tournoi {
 	 * @throws SQLException
 	 */
 	public static Optional<Tournoi> load(int idTournoi, Connection con) throws SQLException {
-		try (Statement stmt = con.createStatement()) {
-			ResultSet rs = stmt.executeQuery(
-					"SELECT Tournoi.*, array_agg(login) filter (where login is not null) FROM Tournoi LEFT JOIN Arbitre USING (idTournoi) WHERE idTournoi = "
-							+ idTournoi + " GROUP BY idTournoi");
+		try (Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery(
+						"SELECT Tournoi.*, array_agg(login) filter (where login is not null) FROM Tournoi LEFT JOIN Arbitre USING (idTournoi) WHERE idTournoi = "
+								+ idTournoi + " GROUP BY idTournoi")) {
 			if (!rs.next()) {
 				return Optional.empty();
 			} else {
 				LocalDate dateDebut = rs.getDate("dateDebut").toLocalDate();
-				Optional<LocalDate> dateFin = Optional.ofNullable(rs.getDate("dateFin")).map(Date::toLocalDate);
+				LocalDate dateFin = Optional.ofNullable(rs.getDate("dateFin")).map(Date::toLocalDate).orElse(null);
 				String lieu = rs.getString("lieu");
 				Array loginArbitres = rs.getArray("array_agg");
 
@@ -188,9 +188,7 @@ public class Tournoi {
 	 */
 	public void save(Connection con) throws SQLException {
 		try (Statement stmt = con.createStatement()) {
-			final String f = fin.map(d -> "'" + d.toString() + "'").orElse("NULL");
-
-			stmt.executeUpdate("UPDATE Tournoi SET dateFin = " + f + " WHERE idTournoi = " + idTournoi);
+			stmt.executeUpdate("UPDATE Tournoi SET dateFin = " + escape(fin) + " WHERE idTournoi = " + idTournoi);
 			stmt.executeUpdate("DELETE FROM Arbitre WHERE idTournoi = " + idTournoi);
 			for (Joueur j : arbitres) {
 				stmt.executeUpdate("INSERT INTO Arbitre VALUES (" + escape(j.getLogin()) + ", " + idTournoi + ")");
