@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,20 +17,17 @@ import java.util.Optional;
  * un tournoi
  */
 public class Partie {
-
 	private final int idPartie;
 	private LocalDateTime date;
-	private Optional<Integer> piecesRestantes;
-
+	private Integer piecesRestantes;
 	private final Joueur blanc;
 	private final Joueur noir;
-	private Optional<Joueur> gagnant;
-	private Optional<Joueur> perdant;
+	private Joueur gagnant;
+	private Joueur perdant;
+	private Integer idTournoi;
 
-	private Optional<Integer> idTournoi;
-
-	private Partie(int idPartie, LocalDateTime date, Joueur blanc, Joueur noir, Optional<Joueur> gagnant,
-			Optional<Joueur> perdant, Optional<Integer> piecesRestantes, Optional<Integer> idTournoi) {
+	private Partie(int idPartie, LocalDateTime date, Joueur blanc, Joueur noir, Joueur gagnant, Joueur perdant,
+			Integer piecesRestantes, Integer idTournoi) {
 		super();
 		this.idPartie = idPartie;
 		this.date = date;
@@ -70,7 +66,7 @@ public class Partie {
 	 *         connu
 	 */
 	public Optional<Integer> getPiecesRestantes() {
-		return piecesRestantes;
+		return Optional.ofNullable(piecesRestantes);
 	}
 
 	/**
@@ -95,7 +91,7 @@ public class Partie {
 	 *         le noir)
 	 */
 	public Optional<Joueur> getGagnant() {
-		return gagnant;
+		return Optional.ofNullable(gagnant);
 	}
 
 	/**
@@ -104,7 +100,7 @@ public class Partie {
 	 *         le noir)
 	 */
 	public Optional<Joueur> getPerdant() {
-		return perdant;
+		return Optional.ofNullable(perdant);
 	}
 
 	/**
@@ -112,7 +108,7 @@ public class Partie {
 	 * @return l'identifiant du tournoi si la partie est liée à celui-ci
 	 */
 	public Optional<Integer> getIdTournoi() {
-		return idTournoi;
+		return Optional.ofNullable(idTournoi);
 	}
 
 	@Override
@@ -142,8 +138,7 @@ public class Partie {
 				}
 				int id = rs.getInt("idPartie");
 				LocalDateTime date = rs.getTimestamp("datePartie").toLocalDateTime();
-				return new Partie(id, date, blanc, noir, Optional.empty(), Optional.empty(), Optional.empty(),
-						Optional.empty());
+				return new Partie(id, date, blanc, noir, null, null, null, null);
 			}
 		}
 	}
@@ -154,7 +149,7 @@ public class Partie {
 	 * @param t
 	 */
 	public void setTournoi(Tournoi t) {
-		idTournoi = Optional.of(t.getIdTournoi());
+		idTournoi = t.getIdTournoi();
 	}
 
 	/**
@@ -181,17 +176,25 @@ public class Partie {
 			LocalDateTime date = rs.getTimestamp("datePartie").toLocalDateTime();// toInstant();
 			String loginBlanc = rs.getString("blanc");
 			String loginNoir = rs.getString("noir");
-			Optional<Integer> piecesRestantes = Optional.ofNullable(rs.getObject("piecesRestantes"))
-					.map(o -> (Integer) o);
-			Optional<String> loginGagnant = Optional.ofNullable(rs.getString("gagnant"));
-			Optional<String> loginPerdant = Optional.ofNullable(rs.getString("perdant"));
-			Optional<Integer> idTournoi = Optional.ofNullable(rs.getObject("idTournoi")).map(o -> (Integer) o);
+
+			// Note: le type Integer permet de gérer les valeurs "null",
+			// contairement au type primitif "int"
+			Integer piecesRestantes = (Integer) rs.getObject("piecesRestantes");
+
+			String loginGagnant = rs.getString("gagnant");
+			String loginPerdant = rs.getString("perdant");
+			Integer idTournoi = (Integer) rs.getObject("idTournoi");
 
 			Joueur blanc = Joueur.load(loginBlanc, con).get();
 			Joueur noir = Joueur.load(loginNoir, con).get();
 
-			Optional<Joueur> gagnant = loginGagnant.map(j -> j.equals(loginBlanc) ? blanc : noir);
-			Optional<Joueur> perdant = loginPerdant.map(j -> j.equals(loginBlanc) ? blanc : noir);
+			Joueur gagnant = null;
+			Joueur perdant = null;
+			if (loginGagnant != null) {
+				assert loginPerdant != null;
+				gagnant = loginGagnant.equals(loginBlanc) ? blanc : noir;
+				perdant = loginPerdant.equals(loginBlanc) ? blanc : noir;
+			}
 
 			parties.add(new Partie(idPartie, date, blanc, noir, gagnant, perdant, piecesRestantes, idTournoi));
 		}
@@ -285,11 +288,8 @@ public class Partie {
 		try (PreparedStatement stmt = con
 				.prepareStatement("UPDATE Partie SET datePartie = ?, idTournoi = ? WHERE idPartie = ?")) {
 			stmt.setTimestamp(1, Timestamp.valueOf(date));
-			if (idTournoi.isPresent()) {
-				stmt.setInt(2, idTournoi.get());
-			} else {
-				stmt.setNull(2, Types.INTEGER);
-			}
+			// setObject permet de gérer les valeurs null
+			stmt.setObject(2, idTournoi);
 			stmt.setInt(3, idPartie);
 			stmt.executeUpdate();
 		}
@@ -307,7 +307,7 @@ public class Partie {
 	 * @throws SQLException
 	 */
 	public void setGagnant(boolean blancGagne, int piecesRestantes, Connection con) throws SQLException {
-		if (this.piecesRestantes.isPresent()) {
+		if (this.piecesRestantes != null) {
 			throw new IllegalStateException("Le vainqueur de cette partie a déjà été désigné");
 		}
 		final Joueur g;
@@ -319,9 +319,9 @@ public class Partie {
 			g = noir;
 			p = blanc;
 		}
-		gagnant = Optional.of(g);
-		perdant = Optional.of(p);
-		this.piecesRestantes = Optional.of(piecesRestantes);
+		gagnant = g;
+		perdant = p;
+		this.piecesRestantes = piecesRestantes;
 
 		try (PreparedStatement stmt = con.prepareStatement(
 				"UPDATE Partie SET gagnant = ?, perdant = ?, piecesRestantes = ? WHERE idPartie = ?")) {

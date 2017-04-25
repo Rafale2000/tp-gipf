@@ -131,6 +131,7 @@ public class JoueurTest {
 			j.save(con);
 		} catch (Exception e) {
 			// Il peut y avoir exception ici si l'attaque est détectée
+			e.printStackTrace();
 		}
 
 		// Quoi qu'il en soit l'email de cobrag ne doit pas avoir été modifié
